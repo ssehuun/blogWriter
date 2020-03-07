@@ -22,6 +22,7 @@ def login():
     id = ""
     pw = ""
     copy_input_xpath('//*[@id="id"]', id)
+    time.sleep(1)
     copy_input_xpath('//*[@id="pw"]', pw)
     driver.find_element_by_xpath('//*[@id="frmNIDLogin"]/fieldset/input').click()
 
@@ -37,9 +38,6 @@ def copy_input_css(css, input):
     ActionChains(driver).move_to_element(ele).click().perform()
     time.sleep(2)
     ActionChains(driver).key_down(Keys.COMMAND).send_keys('v').key_up(Keys.COMMAND).perform()
-    # time.sleep(2)
-    # pyperclip.copy("\n")
-    # ActionChains(driver).key_down(Keys.COMMAND).send_keys('v').key_up(Keys.COMMAND).perform()
 
 def crawl_naver_main_news():
     base_url = "https://land.naver.com"
@@ -61,7 +59,7 @@ def crawl_naver_main_news():
     soup = BeautifulSoup(html, 'html.parser')
 
     main_news_list = soup.select("ul.headline_list > li > dl > dt:nth-of-type(2) > a")  # 이미지가 없을경우 고려 안되어 있으
-
+    print("news count: "+str(len(main_news_list)))
     for link in main_news_list:
         link_list.append(base_url + link['href'])
         news_title_list.append(link.text)
@@ -69,27 +67,33 @@ def crawl_naver_main_news():
 
 def get_real_press():     # 뉴스 제목으로 실제 언론사 url 가져오기
     news_query = 'https://search.naver.com/search.naver?where=news&query='
-    time.sleep(1)
-
-    for title in news_title_list:
-        print(title)
+    for i, title in enumerate(news_title_list):
+        time.sleep(1)
+        print("%d %s" % (i+1, title))
         driver.get(news_query+title)
-        element = WebDriverWait(driver, 5).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "a._sp_each_title"))
-        )
-        element.click()
-        time.sleep(4)
-        driver.switch_to.window(driver.window_handles[1])
-        new_url = driver.current_url
-        real_news_link.append(new_url)
-        print(new_url)
-        driver.close();
-        driver.switch_to.window(driver.window_handles[0])
+        try:
+            element = WebDriverWait(driver, 5).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "a._sp_each_title"))
+            )
+        except Exception as err:
+            # news_title_list.remove(title) -
+            print("not found", err)
+            continue
+        else:
+            element.click()
+            time.sleep(4)
+            driver.switch_to.window(driver.window_handles[1])
+            new_url = driver.current_url
+            real_news_link.append(new_url)
+            print(new_url)
+            driver.close();
+            driver.switch_to.window(driver.window_handles[0])
 
 def make_dict():
+    print("title cnt" + str(len(news_title_list)) + " link cnt: "+str(len(real_news_link)))
     for title, link in zip(news_title_list, real_news_link):
         news_dic[title] = link
-        print(title, link)
+        # print(title, link)
 
 def close_popup():
     time.sleep(2)
@@ -117,7 +121,9 @@ def close_popup():
 
 
 def write_blog():
-    subject = '[부의 길] ' + date + ' 부동산 뉴스'
+    global date
+    date = date[:4]+'.'+date[4:6]+'.'+date[6:]
+    subject = '[부동산 뉴스] ' + date
     copy_input_css('div.se-documentTitle p.se-text-paragraph', subject)
     time.sleep(2)
     driver.find_element_by_css_selector('div.se-section-text p.se-text-paragraph').click()
@@ -127,19 +133,10 @@ def write_blog():
             EC.presence_of_element_located((By.CSS_SELECTOR, "div.se-insert-point-marker-button"))
         )
         element.click()
-        # time.sleep(1)
-        # elem = WebDriverWait(driver, 5).until(
-        #     EC.presence_of_element_located((By.CSS_SELECTOR, "button.se-insert-menu-button-quotation"))
-        # )
-        # elem.click()
         time.sleep(2)
         element = driver.find_element_by_css_selector("button.se-insert-menu-button-quotation")
         ActionChains(driver).move_to_element(element).click().perform() # not be scrolled into view 해결
         time.sleep(2)
-        # el = WebDriverWait(driver, 5).until(
-        #     EC.presence_of_element_located((By.CSS_SELECTOR, "button.se-insert-menu-sub-panel-button-quotation-quotation_line"))
-        # )
-        # el.click()
 
         css1 = "ul.se-insert-menu-sub-panel-quotation button.se-insert-menu-sub-panel-button-quotation-quotation_line"
         eleme = driver.find_element_by_css_selector(css1)
@@ -173,34 +170,14 @@ def publish():
     time.sleep(2)
     driver.find_element_by_css_selector('button.selectbox_button').click()
     time.sleep(2)
-
-    # elem = driver.find_element_by_css_selector("input#category-option-51")
-    # elem = driver.find_element_by_css_selector("ul.list li:nth-child(4)")
-    # ActionChains(driver).move_to_element(elem).click().perform()  # not be scrolled into view 해결
-
     element = WebDriverWait(driver, 5).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, "div.layer_list_option ul.list li:nth-child(4)"))
     )
     ActionChains(driver).move_to_element(element).click().perform()  # not be scrolled into view 해결
-
-
-    # eleme = driver.find_element_by_css_selector('label.category-option-51')
-    # ActionChains(driver).move_to_element(eleme).click().perform()
-    # driver.find_element_by_css_selector('label.category-option-51').click()
     time.sleep(2)
     driver.find_element_by_css_selector('button.btn_confirm').click()
     time.sleep(2)
 
-
-
-
-# css = 'div.se-section-text p.se-text-paragraph'
-
-# css = 'div.se-section-text p.se-text-paragraph'
-
-# for link in link_list:
-# for link in real_news_link:
-#     copy_input_css('div.se-section-text p.se-text-paragraph', link)
 
 if __name__ == "__main__":
     crawl_naver_main_news()
