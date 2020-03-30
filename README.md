@@ -1,4 +1,5 @@
 # blogWriter
+자동으로 Naver 블로그에 뉴스 기사를 써주는 프로그램입니다.
 
 # Reference sites
 http://pythonstudy.xyz/ 파이썬의 다양성을 알기좋음
